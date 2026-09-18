@@ -1,10 +1,24 @@
 'use client';
-import { useState, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { useState } from 'react';
 import { useSimulation } from '@/context/SimulationContext';
 import { SCENARIOS } from '@/lib/simulation/scenarios';
 import { playFlashSaleSound } from '@/lib/utils/sounds';
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { AreaChart, Area, YAxis, ResponsiveContainer } from 'recharts';
+import {
+  Zap,
+  Play,
+  Square,
+  Sliders,
+  Sparkles,
+  TrendingUp,
+  Gauge,
+  Server,
+  Flame,
+  CheckCircle2,
+  Clock,
+  Layers,
+  Database
+} from 'lucide-react';
 
 const FLASH_PHASES = [
   { label: '100', rps: 100, pct: 1 },
@@ -15,11 +29,12 @@ const FLASH_PHASES = [
 ];
 
 export default function TrafficSimulator() {
-  const { state, dispatch } = useSimulation();
+  const { state, dispatch, guideMode } = useSimulation();
   const [flashActive, setFlashActive] = useState(false);
   const [flashPhaseIdx, setFlashPhaseIdx] = useState(0);
 
   const isFlashSale = state.currentRps > 3000;
+  const isCritical = state.currentRps > 8000;
   const totalInstances = state.apiInstances.filter(i => i.status !== 'failed').length + state.workerInstances.filter(i => i.status !== 'failed').length;
 
   const initiateFlashSale = () => {
@@ -50,107 +65,177 @@ export default function TrafficSimulator() {
     });
   };
 
-  const currentPhaseLabel = () => {
-    const rps = state.currentRps;
-    if (rps >= 8000) return '10,000 req/s';
-    if (rps >= 3000) return '5,000 req/s';
-    if (rps >= 1000) return '1,500 req/s';
-    if (rps >= 300) return '500 req/s';
-    return '100 req/s';
-  };
-
   const loadPct = Math.min((state.currentRps / 10000) * 100, 100);
   const loadColor = loadPct > 80 ? 'var(--status-error)' : loadPct > 50 ? 'var(--status-warn)' : 'var(--status-ok)';
-
-  // Cache hit rate and throughput
   const cacheHitPct = Math.round(state.cacheHitRate * 100);
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', maxWidth: '1400px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', maxWidth: '1400px' }}>
+      {/* Page Title */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
         <div>
-          <div className="text-label" style={{ color: 'var(--text-muted)' }}>TRAFFIC EVENT SIMULATOR</div>
-          <h1 style={{ fontSize: '18px', fontWeight: 700, color: 'var(--text-primary)', marginTop: '2px' }}>Flash Sale Control Panel</h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span className="text-label" style={{ color: 'var(--accent-cyan)' }}>TRAFFIC INJECTION & SPIKE CONTROLS</span>
+            <span className="badge badge-cyan" style={{ fontSize: '8px' }}>INTERACTIVE</span>
+          </div>
+          <h1 style={{ fontSize: '20px', fontWeight: 800, color: 'var(--text-primary)', marginTop: '2px' }}>
+            Flash Sale & Traffic Simulator
+          </h1>
         </div>
-        <span className={`badge badge-${isFlashSale ? 'error' : 'ok'}`} style={{ fontSize: '10px' }}>
-          {isFlashSale ? '⚡ FLASH SALE ACTIVE' : '● IDLE'}
+        <span className={`badge badge-${isFlashSale ? 'error' : 'ok'}`} style={{ fontSize: '10px', padding: '6px 14px' }}>
+          {isFlashSale ? '⚡ FLASH SALE ACTIVE' : '● IDLE / NORMAL LOAD'}
         </span>
       </div>
 
-      <div style={{ display: 'flex', gap: '12px' }}>
-        {/* Main flash sale panel */}
-        <div className="panel" style={{ flex: 2, padding: '24px', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-          {/* Flash sale button */}
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px', padding: '24px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-md)', border: `1px solid ${flashActive ? 'rgba(239,68,68,0.3)' : 'var(--border-accent)'}` }}>
+      {/* Guide Mode Explainer for Judges */}
+      {guideMode && (
+        <div className="guide-card">
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-start' }}>
+            <div style={{ width: '32px', height: '32px', borderRadius: '6px', background: 'rgba(6,182,212,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <Flame size={16} color="var(--status-warn)" />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', fontWeight: 700, color: 'var(--text-primary)' }}>
+                  Why do flash sales crash traditional servers?
+                </span>
+                <span className="analogy-pill">Real-World Case</span>
+              </div>
+              <p style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-secondary)', lineHeight: '1.6' }}>
+                When e-commerce platforms launch a flash discount (e.g. 50,000 sneaker pairs or concert tickets), traffic leaps from <strong>500 req/s to 10,000+ req/s</strong> in under 15 seconds.
+                Fixed servers run out of CPU and memory, crashing completely.
+                <strong> Use the controls below</strong> to inject sudden surges and watch FlashForge auto-scale without dropping a single order!
+              </p>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div style={{ display: 'flex', gap: '14px', flexWrap: 'wrap' }}>
+        {/* Main Flash Sale Control Card */}
+        <div className="panel" style={{ flex: 2, minWidth: '380px', padding: '24px', display: 'flex', flexDirection: 'column', gap: '22px' }}>
+          {/* Big Flash Sale Hero Button */}
+          <div style={{
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            gap: '16px',
+            padding: '24px',
+            background: 'var(--bg-elevated)',
+            borderRadius: 'var(--radius-md)',
+            border: `1px solid ${flashActive ? 'rgba(239,68,68,0.4)' : 'var(--border-accent)'}`,
+            boxShadow: flashActive ? '0 0 30px rgba(239,68,68,0.15)' : 'none',
+            transition: 'all 0.3s ease'
+          }}>
             {flashActive && (
-              <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--status-error)', letterSpacing: '0.2em', animation: 'pulse-ok 1s infinite' }}>
-                ● FLASH SALE IN PROGRESS
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--status-error)', letterSpacing: '0.15em', fontWeight: 700 }}>
+                <span className="status-dot error animate-ping" />
+                AUTOMATED 5-PHASE FLASH SURGE IN PROGRESS
               </div>
             )}
             <button
               className={`btn btn-flash ${flashActive ? 'active' : ''}`}
               onClick={initiateFlashSale}
-              style={{ fontSize: '14px', padding: '20px 48px', width: '100%', maxWidth: '360px', justifyContent: 'center' }}
+              style={{
+                fontSize: '14px',
+                padding: '18px 48px',
+                width: '100%',
+                maxWidth: '400px',
+                justifyContent: 'center',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px'
+              }}
             >
-              {flashActive ? '⏹ TERMINATE FLASH SALE' : '⚡ INITIATE FLASH SALE'}
+              {flashActive ? (
+                <>
+                  <Square size={16} fill="currentColor" />
+                  <span>TERMINATE FLASH SALE</span>
+                </>
+              ) : (
+                <>
+                  <Zap size={18} fill="currentColor" />
+                  <span>INITIATE 10,000 RPS FLASH SALE</span>
+                </>
+              )}
             </button>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', letterSpacing: '0.05em' }}>
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--text-muted)', textAlign: 'center', letterSpacing: '0.04em' }}>
               {flashActive
-                ? 'Traffic ramping: 100 → 500 → 1,500 → 5,000 → 10,000 req/s'
-                : 'Simulates a real flash sale traffic spike — triggers auto-scaling, queue management, and cost optimization'
-              }
+                ? 'Traffic automated ramp: 100 → 500 → 1,500 → 5,000 → 10,000 req/s'
+                : '1-Click dramatic demonstration — tests horizontal pod autoscaling, queue buffer, and cache offloading.'}
             </div>
           </div>
 
-          {/* Load bar */}
-          <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-              <span className="text-label">Traffic Load</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: loadColor, fontWeight: 600 }}>
-                {Math.round(state.currentRps).toLocaleString()} req/s
+          {/* Interactive Custom RPS Slider */}
+          <div style={{ padding: '16px', background: 'var(--bg-elevated)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--border)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sliders size={14} color="var(--accent-cyan)" />
+                <span className="text-label" style={{ color: 'var(--text-primary)' }}>Interactive Custom Traffic Throttle</span>
+              </div>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '14px', fontWeight: 700, color: 'var(--accent-cyan)' }}>
+                {Math.round(state.targetRps).toLocaleString()} req/s
               </span>
             </div>
-            <div style={{ position: 'relative', height: '16px', background: 'var(--bg-elevated)', borderRadius: '2px', border: '1px solid var(--border)', overflow: 'hidden' }}>
+            <input
+              type="range"
+              min="100"
+              max="20000"
+              step="100"
+              value={state.targetRps}
+              onChange={(e) => dispatch({ type: 'SET_TARGET_RPS', rps: Number(e.target.value) })}
+              style={{ width: '100%', cursor: 'pointer' }}
+            />
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-dim)' }}>100 rps (Eco)</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-dim)' }}>5,000 rps</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-dim)' }}>10,000 rps</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-dim)' }}>20,000 rps (Maximum)</span>
+            </div>
+          </div>
+
+          {/* Live Load Bar */}
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
+              <span className="text-label">System Saturation Meter</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: loadColor, fontWeight: 700 }}>
+                {Math.round(state.currentRps).toLocaleString()} req/s ({Math.round(loadPct)}% capacity)
+              </span>
+            </div>
+            <div style={{ position: 'relative', height: '18px', background: 'var(--bg-elevated)', borderRadius: '4px', border: '1px solid var(--border)', overflow: 'hidden' }}>
               <div style={{
                 position: 'absolute', top: 0, left: 0, bottom: 0,
                 width: `${loadPct}%`,
-                background: `linear-gradient(90deg, #10b981, ${loadColor})`,
+                background: `linear-gradient(90deg, #10b981 0%, #f59e0b 60%, ${loadColor} 100%)`,
                 transition: 'width 0.4s ease, background 0.4s ease',
-                boxShadow: loadPct > 80 ? `0 0 12px ${loadColor}44` : 'none',
+                boxShadow: loadPct > 80 ? `0 0 16px ${loadColor}66` : 'none',
               }} />
-              {/* Tick marks */}
+              {/* Reference Grid lines */}
               {[25, 50, 75].map(p => (
-                <div key={p} style={{ position: 'absolute', top: 0, bottom: 0, left: `${p}%`, width: '1px', background: 'var(--border)' }} />
+                <div key={p} style={{ position: 'absolute', top: 0, bottom: 0, left: `${p}%`, width: '1px', background: 'rgba(255,255,255,0.1)' }} />
               ))}
-            </div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-dim)' }}>0</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-dim)' }}>2,500</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-dim)' }}>5,000</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-dim)' }}>7,500</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-dim)' }}>10,000</span>
             </div>
           </div>
 
-          {/* Phase progression */}
+          {/* 5-Phase Progression visualization */}
           <div>
-            <div className="text-label" style={{ marginBottom: '10px' }}>Ramp-Up Phases</div>
-            <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            <div className="text-label" style={{ marginBottom: '10px' }}>Automated Ramp-Up Stages</div>
+            <div style={{ display: 'flex', gap: '6px', alignItems: 'center' }}>
               {FLASH_PHASES.map((phase, i) => {
                 const passed = state.currentRps >= phase.rps * 0.8;
                 const active = i === flashPhaseIdx && flashActive;
                 return (
                   <div key={i} style={{ flex: 1, textAlign: 'center' }}>
                     <div style={{
-                      height: '4px',
+                      height: '5px',
                       background: passed ? (active ? 'var(--status-error)' : 'var(--status-warn)') : 'var(--border)',
-                      borderRadius: '2px',
+                      borderRadius: '3px',
                       marginBottom: '6px',
                       transition: 'background 0.3s',
-                      boxShadow: passed ? `0 0 6px ${active ? 'var(--status-error)' : 'var(--status-warn)'}` : 'none',
+                      boxShadow: passed ? `0 0 8px ${active ? 'var(--status-error)' : 'var(--status-warn)'}` : 'none',
                     }} />
                     <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: passed ? 'var(--text-secondary)' : 'var(--text-dim)' }}>
-                      {phase.label}
+                      {phase.label} rps
                     </div>
                   </div>
                 );
@@ -158,74 +243,97 @@ export default function TrafficSimulator() {
             </div>
           </div>
 
-          {/* System response */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <StatBox label="Demand Multiplier" value={`${Math.round(state.currentRps / 100)}x`} color="var(--accent-cyan)" />
-            <StatBox label="System Response" value={isFlashSale ? 'AUTO-SCALING ACTIVE' : 'STANDBY'} color={isFlashSale ? 'var(--status-warn)' : 'var(--status-ok)'} />
-            <StatBox label="Active Workers" value={state.workerInstances.filter(i => i.status === 'healthy').length.toString()} color="var(--text-primary)" />
-            <StatBox label="Cache Hit Rate" value={`${cacheHitPct}%`} color="var(--accent-blue)" />
+          {/* Key Telemetry Stat Boxes */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: '10px' }}>
+            <StatBox icon={<TrendingUp size={14} />} label="Spike Multiplier" value={`${Math.max(1, Math.round(state.currentRps / 100))}x Baseline`} color="var(--accent-cyan)" />
+            <StatBox icon={<Gauge size={14} />} label="Autoscaler State" value={isFlashSale ? 'SCALE-OUT ENGAGED' : 'ECO STANDBY'} color={isFlashSale ? 'var(--status-warn)' : 'var(--status-ok)'} />
+            <StatBox icon={<Server size={14} />} label="Active Workers" value={`${state.workerInstances.filter(i => i.status === 'healthy').length} healthy pods`} color="var(--text-primary)" />
+            <StatBox icon={<Database size={14} />} label="Cache Offload" value={`${cacheHitPct}% absorbed`} color="var(--accent-blue)" />
           </div>
         </div>
 
-        {/* Right panel: presets + predict */}
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '12px' }}>
-          {/* Presets */}
-          <div className="panel" style={{ padding: '16px' }}>
-            <div className="text-label" style={{ marginBottom: '12px' }}>Traffic Presets</div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+        {/* Right side: Presets + Predict + Latency Mini */}
+        <div style={{ flex: 1, minWidth: '320px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          {/* Quick Real-World Traffic Presets */}
+          <div className="panel" style={{ padding: '18px' }}>
+            <div className="text-label" style={{ marginBottom: '12px' }}>Real-World Traffic Presets</div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {SCENARIOS.map(sc => (
                 <button
                   key={sc.name}
                   className="btn btn-outline"
                   style={{
+                    display: 'flex',
+                    alignItems: 'center',
                     justifyContent: 'space-between',
                     textAlign: 'left',
+                    padding: '10px 12px',
                     borderColor: state.scenario === sc.name ? sc.color + '88' : 'var(--border-accent)',
-                    background: state.scenario === sc.name ? sc.color + '11' : 'transparent',
+                    background: state.scenario === sc.name ? sc.color + '14' : 'transparent',
                     color: state.scenario === sc.name ? sc.color : 'var(--text-secondary)',
                   }}
                   onClick={() => dispatch({ type: 'SET_SCENARIO', scenario: sc.name, targetRps: sc.targetRps })}
                 >
-                  <span style={{ fontSize: '10px' }}>{sc.label}</span>
-                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px' }}>{sc.targetRps.toLocaleString()} r/s</span>
+                  <div>
+                    <div style={{ fontSize: '11px', fontWeight: 600, color: 'var(--text-primary)' }}>{sc.label}</div>
+                    <div style={{ fontSize: '8px', color: 'var(--text-muted)', marginTop: '2px' }}>{sc.description}</div>
+                  </div>
+                  <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', fontWeight: 700, color: sc.color }}>
+                    {sc.targetRps.toLocaleString()} r/s
+                  </span>
                 </button>
               ))}
             </div>
           </div>
 
-          {/* FlashForge Predict */}
-          <div className="panel" style={{ padding: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '10px', color: 'var(--accent-cyan)', fontWeight: 600, letterSpacing: '0.08em' }}>FLASHFORGE PREDICT</span>
-              <span className="badge badge-cyan" style={{ fontSize: '8px' }}>BETA</span>
+          {/* FlashForge Predictive Scaling */}
+          <div className="panel" style={{ padding: '18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sparkles size={14} color="var(--accent-cyan)" />
+                <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--accent-cyan)', fontWeight: 700, letterSpacing: '0.08em' }}>
+                  AI PREDICTIVE PRE-SCALE
+                </span>
+              </div>
+              <span className="badge badge-cyan" style={{ fontSize: '8px' }}>PROACTIVE</span>
             </div>
-            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-muted)', marginBottom: '12px' }}>
-              Analyzes recent traffic trend to recommend pre-scaling before spike.
+            <div style={{ fontFamily: 'var(--font-mono)', fontSize: '9px', color: 'var(--text-muted)', marginBottom: '12px', lineHeight: '1.5' }}>
+              Analyzes incoming traffic gradient to warm-up capacity <strong>before</strong> latency spikes occur.
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <PredictRow label="Expected Peak" value={`${state.predictedPeak.toLocaleString()} req/s`} />
-              <PredictRow label="Confidence" value={`${state.predictConfidence}%`} />
-              <PredictRow label="Rec. Capacity" value={`${totalInstances < 6 ? 6 : totalInstances} instances`} />
-              <PredictRow label="Peak ETA" value="~10 min" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+              <PredictRow label="Expected Peak Surge" value={`${state.predictedPeak.toLocaleString()} req/s`} />
+              <PredictRow label="ML Model Confidence" value={`${state.predictConfidence}%`} />
+              <PredictRow label="Recommended Pods" value={`${totalInstances < 6 ? 6 : totalInstances} instances`} />
+              <PredictRow label="Surge Arrival ETA" value="~10 minutes" />
             </div>
             <button
               className="btn btn-outline"
-              style={{ width: '100%', marginTop: '12px', justifyContent: 'center', borderColor: 'rgba(6,182,212,0.4)', color: 'var(--accent-cyan)' }}
+              style={{
+                width: '100%',
+                marginTop: '14px',
+                justifyContent: 'center',
+                borderColor: state.preScaled ? 'rgba(16,185,129,0.4)' : 'rgba(6,182,212,0.4)',
+                color: state.preScaled ? 'var(--status-ok)' : 'var(--accent-cyan)',
+                padding: '10px'
+              }}
               onClick={() => dispatch({ type: 'PRE_SCALE' })}
               disabled={state.preScaled}
             >
-              {state.preScaled ? '✓ PRE-SCALED' : '[ PRE-SCALE INFRASTRUCTURE ]'}
+              {state.preScaled ? '✓ CLUSTER PRE-WARMED' : '⚡ PRE-SCALE CLUSTER NOW'}
             </button>
           </div>
 
-          {/* Live RPS chart mini */}
-          <div className="panel" style={{ padding: '16px' }}>
-            <div className="text-label" style={{ marginBottom: '8px' }}>Latency Trend</div>
-            <ResponsiveContainer width="100%" height={80}>
+          {/* Real-time Latency Sparkline */}
+          <div className="panel" style={{ padding: '18px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+              <span className="text-label">Live Latency Response</span>
+              <Clock size={13} color="var(--accent-cyan)" />
+            </div>
+            <ResponsiveContainer width="100%" height={75}>
               <AreaChart data={state.latencyHistory.map((v, i) => ({ t: i, v }))} margin={{ top: 2, right: 0, left: 0, bottom: 0 }}>
                 <defs>
                   <linearGradient id="latGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.3} />
+                    <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
                     <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
                   </linearGradient>
                 </defs>
@@ -233,9 +341,9 @@ export default function TrafficSimulator() {
                 <YAxis domain={['auto', 'auto']} hide />
               </AreaChart>
             </ResponsiveContainer>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '4px' }}>
-              <span className="text-label">Current</span>
-              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '12px', color: 'var(--accent-cyan)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '6px' }}>
+              <span className="text-label">Average Response Time</span>
+              <span style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', color: 'var(--accent-cyan)', fontWeight: 700 }}>
                 {Math.round(state.avgLatency)} ms
               </span>
             </div>
@@ -246,11 +354,14 @@ export default function TrafficSimulator() {
   );
 }
 
-function StatBox({ label, value, color }: { label: string; value: string; color: string }) {
+function StatBox({ icon, label, value, color }: { icon: React.ReactNode; label: string; value: string; color: string }) {
   return (
-    <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '10px 12px' }}>
-      <div className="text-label" style={{ marginBottom: '4px' }}>{label}</div>
-      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', fontWeight: 600, color }}>{value}</div>
+    <div style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius-sm)', padding: '12px 14px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px', color: 'var(--text-muted)' }}>
+        {icon}
+        <span className="text-label" style={{ fontSize: '8px' }}>{label}</span>
+      </div>
+      <div style={{ fontFamily: 'var(--font-mono)', fontSize: '13px', fontWeight: 700, color }}>{value}</div>
     </div>
   );
 }
@@ -259,7 +370,7 @@ function PredictRow({ label, value }: { label: string; value: string }) {
   return (
     <div className="data-row">
       <span className="text-label">{label}</span>
-      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)', fontWeight: 500 }}>{value}</span>
+      <span style={{ fontFamily: 'var(--font-mono)', fontSize: '11px', color: 'var(--text-primary)', fontWeight: 600 }}>{value}</span>
     </div>
   );
 }

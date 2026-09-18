@@ -85,5 +85,8 @@ export type SimAction =
   | { type: 'START_DEMO' }
   | { type: 'STOP_DEMO' }
   | { type: 'CHAOS_TEST' }
+  | { type: 'CHAOS_SPIKE' }
+  | { type: 'CHAOS_CACHE_PURGE' }
   | { type: 'PRE_SCALE' }
+  | { type: 'INJECT_REQUEST'; req: RequestEntry }
   | { type: 'RESET' };

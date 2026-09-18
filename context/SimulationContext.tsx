@@ -8,14 +8,21 @@ interface SimContextValue {
   dispatch: React.Dispatch<SimAction>;
   startSim: () => void;
   stopSim: () => void;
+  guideMode: boolean;
+  toggleGuideMode: () => void;
 }
 
 const SimContext = createContext<SimContextValue | null>(null);
 
 export function SimulationProvider({ children }: { children: React.ReactNode }) {
   const [state, dispatch] = useReducer(simulationReducer, undefined, getInitialState);
+  const [guideMode, setGuideMode] = React.useState(true);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const runningRef = useRef(false);
+
+  const toggleGuideMode = useCallback(() => {
+    setGuideMode(prev => !prev);
+  }, []);
 
   const startSim = useCallback(() => {
     if (intervalRef.current) return;
@@ -40,7 +47,7 @@ export function SimulationProvider({ children }: { children: React.ReactNode }) 
   }, [startSim, stopSim]);
 
   return (
-    <SimContext.Provider value={{ state, dispatch, startSim, stopSim }}>
+    <SimContext.Provider value={{ state, dispatch, startSim, stopSim, guideMode, toggleGuideMode }}>
       {children}
     </SimContext.Provider>
   );

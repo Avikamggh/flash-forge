@@ -115,7 +115,7 @@ export function getInitialState(): SimState {
     totalRequests: 0,
     successfulRequests: 0,
     incidents: [
-      { id: 'INC-0', timestamp: Date.now() - 3000, message: 'System initialized. All services healthy.', severity: 'info' },
+      { id: 'INC-0', timestamp: 1773800000000, message: 'System initialized. All services healthy.', severity: 'info' },
     ],
     requestFeed: [],
     scalingEvents: [],
@@ -165,6 +165,40 @@ export function simulationReducer(state: SimState, action: SimAction): SimState 
         workerInstances: updatedWorkers,
         chaosActive: true,
         incidents: addIncident({ ...state, incidents: addIncident(state, `⚠ CHAOS: ${victim.id} instance failure simulated`, 'critical') }, 'Auto-recovery initiated. Redistributing traffic...', 'warning'),
+      };
+    }
+
+    case 'CHAOS_SPIKE': {
+      return {
+        ...state,
+        targetRps: 15000,
+        chaosActive: true,
+        incidents: addIncident(
+          { ...state, incidents: addIncident(state, '⚡ CHAOS: 15,000 req/s flash spike injected!', 'critical') },
+          'Threshold alarm fired. Auto-scaling emergency pods...',
+          'warning'
+        ),
+      };
+    }
+
+    case 'CHAOS_CACHE_PURGE': {
+      return {
+        ...state,
+        cacheHitRate: 0.08,
+        incidents: addIncident(
+          { ...state, incidents: addIncident(state, '🛑 CHAOS: Redis cache cluster flushed. Cache hit dropped to 8%', 'warning') },
+          'PostgreSQL read replicas absorbing direct read surge safely',
+          'info'
+        ),
+      };
+    }
+
+    case 'INJECT_REQUEST': {
+      return {
+        ...state,
+        totalRequests: state.totalRequests + 1,
+        successfulRequests: action.req.status === 'SUCCESS' ? state.successfulRequests + 1 : state.successfulRequests,
+        requestFeed: [action.req, ...state.requestFeed].slice(0, 30),
       };
     }
 
